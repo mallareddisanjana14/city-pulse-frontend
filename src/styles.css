@@ -1,0 +1,78 @@
+/* Global styles */
+body {
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #8BC6EC 0%, #9599E2 100%);
+  min-height: 100vh;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* Headings */
+h1, h2 {
+  color: #222;
+  text-align: center;
+}
+
+/* Card layout */
+.card {
+  background-color: rgba(255, 255, 255, 0.92);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  max-width: 600px;
+  margin: 30px auto;
+}
+
+/* Buttons */
+button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background-color: #4a69bd;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+button:hover {
+  background-color: #1e3799;
+  transform: scale(1.05);
+}
+
+/* Inputs */
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-right: 10px;
+  width: calc(100% - 120px);
+}
+
+/* Notification styling */
+.notification {
+  text-align: center;
+  padding: 10px;
+  font-weight: 500;
+  animation: fadeInOut 5s ease-in-out;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .card {
+    padding: 16px;
+    margin: 10px;
+  }
+
+  input, button {
+    width: 100%;
+    margin: 5px 0;
+  }
+}

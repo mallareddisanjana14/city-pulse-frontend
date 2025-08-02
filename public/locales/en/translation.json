@@ -1,0 +1,20 @@
+{
+  "city_dashboard": "City Pulse Dashboard",
+  "filter_location": "Filter by location...",
+  "error_load": "Failed to load events.",
+  "error_delete": "Failed to delete event.",
+  "error_edit": "Failed to edit event.",
+  "error_resolve": "Failed to resolve event.",
+  "only_admin_resolve": "⚠️ Only admins can resolve events.",
+  "no_events": "No events to display or filter applied.",
+  "save": "Save",
+  "cancel": "Cancel",
+  "at": "at",
+  "time": "Time",
+  "resolved": "Resolved",
+  "delete": "Delete",
+  "resolve": "Resolve",
+  "edit": "Edit",
+  "num_events": "Number of Events",
+  "chart_title": "Events by Location"
+}

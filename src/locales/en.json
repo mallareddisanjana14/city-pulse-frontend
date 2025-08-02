@@ -1,0 +1,13 @@
+{
+  "dashboardTitle": "City Pulse Dashboard",
+  "filterPlaceholder": "Filter by location...",
+  "noEvents": "No events to display or filter applied.",
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "resolve": "Resolve",
+  "edit": "Edit",
+  "resolved": "Resolved",
+  "onlyAdmins": "⚠️ Only admins can resolve events.",
+  "eventsByLocation": "Events by Location"
+}
