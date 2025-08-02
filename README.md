@@ -61,17 +61,12 @@ city-pulse-frontend/
 
 ---
 
-## 📸 Screenshots
-
-> 📌 *Screenshots will be available in the `screenshots/` folder after upload.*
-
----
 
 ## 🔗 Live Deployment
 
 Once deployed via Firebase Hosting:
 
-👉 [Access the App Live](https://your-project-id.web.app)
+👉 [Access the App Live](https://citypulseapp-619cc.web.app)
 
 ---
 
@@ -91,4 +86,4 @@ Once deployed via Firebase Hosting:
 Developed by **Sanjana M**
 
 📧 mallareddisanjana@gmail.com  
-🌐 [LinkedIn](https://www.linkedin.com/in/your-profile)
+🌐 [LinkedIn](https://www.linkedin.com/in/sanjana-mallareddi-62870b314)
