@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { signOut, onAuthStateChanged, sendEmailVerification } from 'firebase/auth';
+import { ref, onValue, set } from 'firebase/database';
 
 import CityDashboard from './CityDashboard';
 import CitizenReport from './CitizenReport';
 import AnalyticsDashboard from './AnalyticsDashboard';
-import HelpSection from './HelpSection'; // ✅ NEW
+import HelpSection from './HelpSection';
 import Login from './Login';
 import SignUp from './SignUp';
 import './i18n';
-import { auth } from './firebase';
-import { signOut, onAuthStateChanged, sendEmailVerification } from 'firebase/auth';
-import { database } from './firebase';
-import { ref, onValue, set } from 'firebase/database';
+import { auth, database } from './firebase';
 import './styles.css';
 
 function App() {
@@ -21,52 +20,41 @@ function App() {
   const [users, setUsers] = useState({});
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      console.log(currentUser ? `Logged in: ${currentUser.email}` : 'Logged out');
-
       if (currentUser && !currentUser.emailVerified) {
         sendVerification(currentUser);
       }
     });
-
-    return () => unsubscribeAuth();
+    return unsubscribe;
   }, []);
 
   const sendVerification = (user) => {
     sendEmailVerification(user)
-      .then(() => {
-        console.log("Verification email sent.");
-        setNotification('📧 Verification email sent. Please check your inbox or spam folder.');
-      })
-      .catch((error) => {
-        console.error("Error sending verification email:", error);
-        setNotification('❌ Failed to send verification email. Try again later.');
-      });
-
-    setTimeout(() => setNotification(''), 7000);
+      .then(() => setNotification('📧 Verification email sent. Check inbox/spam.'))
+      .catch(() => setNotification('❌ Failed to send verification email.'));
+    setTimeout(() => setNotification(''), 5000);
   };
 
   useEffect(() => {
     if (!user || !user.emailVerified) return;
 
     const eventsRef = ref(database, 'events');
-    const unsubscribeEvents = onValue(eventsRef, (snapshot) => {
+    const eventsListener = onValue(eventsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const entries = Object.entries(data);
         const [latestId, latestEvent] = entries[entries.length - 1];
-
         if (latestId !== lastSeenEventId && latestEvent) {
-          const description = (latestEvent.description || 'No Description').replace(/(^"|"$)/g, '');
-          const location = (latestEvent.location || 'Unknown').replace(/(^"|"$)/g, '');
+          const description = latestEvent.description?.replace(/(^"|"$)/g, '') ?? 'No Description';
+          const location = latestEvent.location?.replace(/(^"|"$)/g, '') ?? 'Unknown';
           setNotification(`📢 New event: ${description} at ${location}`);
           setLastSeenEventId(latestId);
           setTimeout(() => setNotification(''), 5000);
 
           const usersRef = ref(database, 'users');
           onValue(usersRef, (snap) => {
-            const userData = snap.val() || {};
+            const userData = snap.val() ?? {};
             Object.keys(userData).forEach(uid => {
               if (uid !== user.uid) {
                 set(ref(database, `users/${uid}/lastNotification`), {
@@ -75,109 +63,136 @@ function App() {
                 });
               }
             });
-          });
+          }, { onlyOnce: true });
         }
       }
     });
 
     const userRef = ref(database, `users/${user.uid}/lastNotification`);
-    const unsubscribeUser = onValue(userRef, (snap) => {
-      const notificationData = snap.val();
-      if (notificationData && notificationData.timestamp > (users[user.uid]?.lastNotification?.timestamp || 0)) {
+    const userListener = onValue(userRef, (snap) => {
+      const data = snap.val();
+      if (data && data.timestamp > (users[user.uid]?.lastNotification?.timestamp || 0)) {
         setUsers(prev => ({
           ...prev,
-          [user.uid]: { lastNotification: notificationData }
+          [user.uid]: { lastNotification: data }
         }));
       }
     });
 
     return () => {
-      unsubscribeEvents();
-      unsubscribeUser && unsubscribeUser();
+      eventsListener();
+      userListener();
     };
   }, [user, lastSeenEventId]);
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to logout?')) {
-      signOut(auth)
-        .then(() => console.log('Logged out'))
-        .catch((error) => console.error('Logout error:', error.message));
+      signOut(auth).catch((error) => console.error(error));
     }
   };
 
   return (
     <BrowserRouter>
-      <div>
-        <h1>🌆 City Pulse App</h1>
-        <p>
-          <strong>Firebase Auth Status:</strong>{' '}
-          {user ? `Connected as ${user.email}` : 'Not Connected'}
-        </p>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ backgroundColor: '#3498db', color: '#fff', padding: '10px', textAlign: 'center' }}>
+          <h1>🌆 City Pulse App</h1>
+          <p>
+            <strong>Status:</strong> {user ? `Connected as ${user.email}` : 'Not Connected'}
+          </p>
+        </div>
 
-        {/* 🔔 Notifications */}
-        {notification && (
-          <div
-            style={{
-              color: notification.startsWith('⚠️') || notification.startsWith('❌') ? 'red' : 'green',
+        {/* Main content scrollable */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+          {/* Notifications */}
+          {notification && (
+            <div style={{
+              backgroundColor: notification.startsWith('❌') ? '#e74c3c' : '#2ecc71',
+              color: '#fff',
+              padding: '10px',
               marginBottom: '10px',
-              fontWeight: 'bold'
-            }}
-          >
-            {notification}
-          </div>
-        )}
+              borderRadius: '5px'
+            }}>
+              {notification}
+            </div>
+          )}
 
-        {/* 👁️ Event Info */}
-        {user && users[user.uid]?.lastNotification?.message && (
-          <div style={{ color: 'blue', marginBottom: '10px' }}>
-            {users[user.uid].lastNotification.message} <br />
-            <small>({new Date(users[user.uid].lastNotification.timestamp).toLocaleString()})</small>
-          </div>
-        )}
+          {/* User event notification */}
+          {user && users[user.uid]?.lastNotification && (
+            <div style={{ backgroundColor: '#ecf0f1', padding: '10px', marginBottom: '10px', borderRadius: '5px' }}>
+              <strong>{users[user.uid].lastNotification.message}</strong><br />
+              <small>{new Date(users[user.uid].lastNotification.timestamp).toLocaleString()}</small>
+            </div>
+          )}
 
-        {/* 🆘 Help Link */}
-        <Link to="/help">
-          <button style={{ marginBottom: '10px', backgroundColor: '#2ecc71', color: '#fff' }}>
-            ❓ Help & Guide
-          </button>
-        </Link>
+          {/* Help button */}
+          <Link to="/help">
+            <button style={{
+              backgroundColor: '#2ecc71',
+              color: '#fff',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              marginBottom: '15px'
+            }}>❓ Help & Guide</button>
+          </Link>
 
-        {/* Main Routes */}
-        <Routes>
-          <Route
-            path="/"
-            element={
+          {/* Routes */}
+          <Routes>
+            <Route path="/" element={
               user ? (
                 user.emailVerified ? (
                   <>
-                    <button style={{ backgroundColor: '#e74c3c', color: '#fff' }} onClick={handleLogout}>Logout</button>
+                    <button onClick={handleLogout} style={{
+                      backgroundColor: '#e74c3c',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      marginBottom: '15px'
+                    }}>Logout</button>
+
                     <CitizenReport />
                     <CityDashboard key={user.uid} />
                     <AnalyticsDashboard />
                   </>
                 ) : (
                   <>
-                    <p style={{ color: 'orange' }}>⚠️ Please verify your email to access dashboard features.</p>
-                    <button style={{ backgroundColor: '#3498db', color: '#fff' }} onClick={() => sendVerification(user)}>
-                      Resend Verification Email
-                    </button>
-                    <br /><br />
-                    <button onClick={handleLogout}>Logout</button>
+                    <p style={{ color: '#e67e22', fontWeight: 'bold' }}>⚠️ Verify your email to access features.</p>
+                    <button onClick={() => sendVerification(user)} style={{
+                      backgroundColor: '#3498db',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '5px',
+                      cursor: 'pointer',
+                      marginBottom: '10px'
+                    }}>Resend Verification Email</button>
+                    <br />
+                    <button onClick={handleLogout} style={{
+                      backgroundColor: '#e74c3c',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '5px',
+                      cursor: 'pointer'
+                    }}>Logout</button>
                   </>
                 )
               ) : (
                 <>
                   <Login />
                   <SignUp />
-                  <p>Loading or not authenticated...</p>
+                  <p style={{ color: '#7f8c8d' }}>Please log in or sign up to continue.</p>
                 </>
               )
-            }
-          />
+            } />
 
-          {/* Help Page */}
-          <Route path="/help" element={<HelpSection />} />
-        </Routes>
+            <Route path="/help" element={<HelpSection />} />
+          </Routes>
+        </div>
       </div>
     </BrowserRouter>
   );
